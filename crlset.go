@@ -59,16 +59,14 @@ const crlSetAppId = "hfnkpimlhhgieaddgfemjhofmfblmnib"
 // buildVersionRequestURL returns a URL from which the current CRLSet version
 // information can be fetched.
 func buildVersionRequestURL(full bool) string {
-	arg := fmt.Sprintf("id=%s&v=&uc&acceptformat=crx3", crlSetAppId)
+	args := url.Values(make(map[string][]string))
+	args.Add("x", "id="+crlSetAppId+"&v=&uc"+"&acceptformat=crx3")
 	if full {
 		// This causes omaha to bucket the request into the "Auto full" cohort,
 		// rather than the "Auto androidlowmem" (default) bucket. The full cohort
 		// gets a much larger crlset than the androidlowmem cohort.
-		arg = arg + "&updaterversion=127"
+		args.Add("tag", "force_full")
 	}
-
-	args := url.Values(make(map[string][]string))
-	args.Add("x", arg)
 
 	return (&url.URL{
 		Scheme:   "https",
