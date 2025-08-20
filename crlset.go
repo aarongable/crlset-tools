@@ -29,10 +29,12 @@ import (
 // update and the related structures are used for parsing the XML response from Omaha. The response looks like:
 // <?xml version="1.0" encoding="UTF-8"?>
 // <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0" server="prod">
-//   <daystart elapsed_seconds="42913"/>
-//   <app appid="hfnkpimlhhgieaddgfemjhofmfblmnib" status="ok">
-//     <updatecheck codebase="http://www.gstatic.com/chrome/crlset/56/crl-set-14830555124393087472.crx.data" hash="" size="0" status="ok" version="56"/>
-//   </app>
+//
+//	<daystart elapsed_seconds="42913"/>
+//	<app appid="hfnkpimlhhgieaddgfemjhofmfblmnib" status="ok">
+//	  <updatecheck codebase="http://www.gstatic.com/chrome/crlset/56/crl-set-14830555124393087472.crx.data" hash="" size="0" status="ok" version="56"/>
+//	</app>
+//
 // </gupdate>
 type update struct {
 	XMLName xml.Name    `xml:"gupdate"`
@@ -56,9 +58,17 @@ const crlSetAppId = "hfnkpimlhhgieaddgfemjhofmfblmnib"
 
 // buildVersionRequestURL returns a URL from which the current CRLSet version
 // information can be fetched.
-func buildVersionRequestURL() string {
+func buildVersionRequestURL(full bool) string {
+	arg := fmt.Sprintf("id=%s&v=&uc&acceptformat=crx3", crlSetAppId)
+	if full {
+		// This causes omaha to bucket the request into the "Auto full" cohort,
+		// rather than the "Auto androidlowmem" (default) bucket. The full cohort
+		// gets a much larger crlset than the androidlowmem cohort.
+		arg = arg + "&updaterversion=127"
+	}
+
 	args := url.Values(make(map[string][]string))
-	args.Add("x", "id="+crlSetAppId+"&v=&uc"+"&acceptformat=crx3")
+	args.Add("x", arg)
 
 	return (&url.URL{
 		Scheme:   "https",
@@ -85,8 +95,8 @@ func (z zipReader) ReadAt(p []byte, pos int64) (int, error) {
 	return copy(p, []byte(z)[int(pos):]), nil
 }
 
-func fetch() bool {
-	resp, err := http.Get(buildVersionRequestURL())
+func fetch(full bool) bool {
+	resp, err := http.Get(buildVersionRequestURL(full))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to get current version: %s\n", err)
 		return false
@@ -343,7 +353,7 @@ func getHeader(filename string) (header crlSetHeader, rest []byte, ok bool) {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "%s: { fetch | dumpSPKIs <filename> | dump <filename> [<cert filename>] }\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "%s: { fetch [-androidlowmem] | dumpSPKIs <filename> | dump <filename> [<cert filename>] }\n", os.Args[0])
 }
 
 func main() {
@@ -358,7 +368,10 @@ func main() {
 	switch os.Args[1] {
 	case "fetch":
 		if len(os.Args) == 2 {
-			result = fetch()
+			result = fetch(true)
+			needUsage = false
+		} else if len(os.Args) == 3 && os.Args[2] == "-androidlowmem" {
+			result = fetch(false)
 			needUsage = false
 		}
 	case "dump":
