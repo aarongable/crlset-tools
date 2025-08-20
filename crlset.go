@@ -29,12 +29,10 @@ import (
 // update and the related structures are used for parsing the XML response from Omaha. The response looks like:
 // <?xml version="1.0" encoding="UTF-8"?>
 // <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0" server="prod">
-//
-//	<daystart elapsed_seconds="42913"/>
-//	<app appid="hfnkpimlhhgieaddgfemjhofmfblmnib" status="ok">
-//	  <updatecheck codebase="http://www.gstatic.com/chrome/crlset/56/crl-set-14830555124393087472.crx.data" hash="" size="0" status="ok" version="56"/>
-//	</app>
-//
+//   <daystart elapsed_seconds="42913"/>
+//   <app appid="hfnkpimlhhgieaddgfemjhofmfblmnib" status="ok">
+//     <updatecheck codebase="http://www.gstatic.com/chrome/crlset/56/crl-set-14830555124393087472.crx.data" hash="" size="0" status="ok" version="56"/>
+//   </app>
 // </gupdate>
 type update struct {
 	XMLName xml.Name    `xml:"gupdate"`
